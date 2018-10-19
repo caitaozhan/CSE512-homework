@@ -8,11 +8,15 @@ classdef SupportVector
     
     methods
         function obj = SupportVector(alpha, y, x)
+            % Init
             obj.alpha = alpha;
             obj.y = y;
             obj.x = x;
         end
+        function print(obj)
+            % print information
+            fprintf('alpha = %s, y = %s\n', num2str(obj.alpha), num2str(obj.y));
+        end
     end
-
 end
 

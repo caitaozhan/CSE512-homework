@@ -1,3 +1,5 @@
+% Solves question 2.1 ~ 2.5
+
 data = load('q2_1_data.mat');
 X_t  = data.trD;    % training
 y_t  = data.trLb;
@@ -5,7 +7,7 @@ X_v  = data.valD;   % validation
 y_v  = data.valLb;
 
 % Training %
-C = 10;
+C = 0.1;
 [alpha, svlist] = solveSVM(X_t, y_t, C);
 [w, b] = compute_w_b(X_t, y_t, alpha);
 %%%%%%%%%%%%
@@ -198,6 +200,7 @@ function [alpha, svlist] = solveSVM(X, y, C)
 %   C: 0 <= alpha <= C
 % Return:
 %   alpha: Lagrangian multipliers (n, 1)
+%   svlist: a list of support vectors
 
     [~, n] = size(X);    % dimension = d, number of rows = n
     f = -ones(n, 1);
