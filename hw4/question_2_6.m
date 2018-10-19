@@ -1,12 +1,5 @@
 % Solves question 2.6
 
-%data = load('q2_2_data.mat');
-%X_tr  = data.trD;    % training
-%y_tr  = data.trLb;
-%X_va  = data.valD;   % validation
-%y_va  = data.valLb;
-%X_te  = data.tstD;   % testing
-
 
 data = load('q2_1_data.mat');
 X_t  = data.trD;    % training
@@ -17,30 +10,64 @@ y_v  = data.valLb;
 C = 10;
 
 %%%%%%
-[svlist, b] = solveSVMlinear(X_t, y_t, C);
-y_pred = prediction(X_v, svlist, b);
+[svlist, b] = solve_svm_linear(X_t, y_t, C);
+y_pred = prediction_linear(X_v, svlist, b);
 acc = accuracy(y_v, y_pred);
 %%%%%%
 
 %%%%%%
 gamma = gamma_start(X_t);
-[svlist, b2] = solveSVMrdf(X_t, y_t, C, gamma);
-y_pred = prediction(X_v, svlist, b2);
+[svlist, b2] = solve_svm_rdf(X_t, y_t, C, gamma);
+y_pred = prediction_rdf(X_v, svlist, b2, gamma);
 acc2 = accuracy(y_v, y_pred);
 %%%%%%
 
-%{
-gammas = linspace(0.1, 1, 20);
+
+gammas = linspace(0.1, 2, 20);
 for i = 1:20
-    [svlist, b2] = solveSVMrdf(X_t, y_t, C, gammas(i));
-    y_pred = prediction(X_v, svlist, b2);
+    [svlist, b2] = solve_svm_rdf(X_t, y_t, C, gammas(i));
+    y_pred = prediction_rdf(X_v, svlist, b2, gammas(i));
     acc2 = accuracy(y_v, y_pred);
     fprintf('gamma = %s, accuracy = %s\n', num2str(gammas(i)), num2str(acc2));
 end
+
+
+
+%{
+data = load('q2_2_data.mat');
+X_t  = data.trD;       % training
+y_t  = data.trLb;
+X_v  = data.valD;      % validation
+y_v  = data.valLb;
+X_test  = data.tstD;   % testing
+
+function binarySVMs = solveMultiClassSVMlinear(X, y, C)
+% use quadratic programming to solve multi-class SVM using one-versus-rest with linear kernel
+% Args:
+%   X: features (d, n)
+%   y: labels (n, 1)
+%   C: 0 <= alpha <= C
+% Return:
+%   a list of BinarySVM
+    binarySVMs = [];
+    [n, ~] = size(y);
+    for label = 1:10               % there are 10 different labels
+        y_binary = ones(n, 1);
+        for i = 1:n
+            if y(i) ~= label
+                y_binary(i) = -1;  % one-versus-rest
+            end 
+        end
+        [svlist, b] = solveSVMlinear(X, y_binary, C);
+        binarySVMs = [binarySVMS, BinarySVM(label, svlist, b)];
+    end
+end
 %}
 
-function [svlist, b] = solveSVMlinear(X, y, C)
-% use quadratic programming to solve SVM with linear kernel
+
+
+function [svlist, b] = solve_svm_linear(X, y, C)
+% use quadratic programming to solve binary SVM with linear kernel
 % Args:
 %   X: features (d, n)
 %   y: labels (n, 1)
@@ -88,8 +115,8 @@ function [svlist, b] = solveSVMlinear(X, y, C)
 end
 
 
-function [svlist, b] = solveSVMrdf(X, y, C, gamma)
-% use quadratic programming to solve SVM with linear kernel
+function [svlist, b] = solve_svm_rdf(X, y, C, gamma)
+% use quadratic programming to solve binary SVM with linear kernel
 % Args:
 %   X: features (d, n)
 %   y: labels (n, 1)
@@ -155,8 +182,8 @@ function gamma = gamma_start(X)
 end
 
 
-function pred = prediction(X, svlist, b)
-% Prediction using alpha's and b, labels
+function pred = prediction_linear(X, svlist, b)
+% Prediction using alpha's and b, labels with linear kernel
 % Time complexity: worst case O(n^2 * d), but usally O(nd*SV) where SV is
 % the number of support vectors is usually << n
 % Args:
@@ -173,7 +200,37 @@ function pred = prediction(X, svlist, b)
         summation = 0;
         [~, n_sv] = size(svlist);
         for j = 1:n_sv
-            summation = summation + svlist(j).alpha * svlist(j).y * svlist(j).x' * X(:, i);
+            summation = summation + svlist(j).alpha * svlist(j).y * SupportVector.linear_kernel(svlist(j).x, X(:, i));
+        end
+        summation = summation + b;
+        if summation >= 0
+            pred = [pred, 1];
+        else
+            pred = [pred, -1];
+        end
+    end
+end
+
+
+function pred = prediction_rdf(X, svlist, b, gamma)
+% Prediction using alpha's and b, labels with linear kernel
+% Time complexity: worst case O(n^2 * d), but usally O(nd*SV) where SV is
+% the number of support vectors is usually << n
+% Args:
+%   X: features (d, n)
+%   y: labels (n, 1)
+%   svlist: a list of support vectors
+%   b: intercept, float
+% Return:
+%   pred: (n, 1)
+
+    [~, n] = size(X);
+    pred = [];
+    for i = 1:n
+        summation = 0;
+        [~, n_sv] = size(svlist);
+        for j = 1:n_sv
+            summation = summation + svlist(j).alpha * svlist(j).y * SupportVector.rdf_kernel(svlist(j).x, X(:, i), gamma);
         end
         summation = summation + b;
         if summation >= 0
