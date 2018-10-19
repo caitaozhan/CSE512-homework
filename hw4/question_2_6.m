@@ -14,23 +14,33 @@ y_t  = data.trLb;
 X_v  = data.valD;   % validation
 y_v  = data.valLb;
 
-C = 5;
+C = 10;
 
 %%%%%%
-[svlist, b1] = solveSVM(X_t, y_t, C);
-y_pred1 = prediction(X_v, svlist, b1);
-acc1 = accuracy(y_v, y_pred1);
+[svlist, b] = solveSVMlinear(X_t, y_t, C);
+y_pred = prediction(X_v, svlist, b);
+acc = accuracy(y_v, y_pred);
 %%%%%%
 
 %%%%%%
-[svlist, b2] = solveSVM2(X_t, y_t, C);
-y_pred2 = prediction(X_v, svlist, b2);
-acc2 = accuracy(y_v, y_pred2);
+gamma = gamma_start(X_t);
+[svlist, b2] = solveSVMrdf(X_t, y_t, C, gamma);
+y_pred = prediction(X_v, svlist, b2);
+acc2 = accuracy(y_v, y_pred);
 %%%%%%
 
+%{
+gammas = linspace(0.1, 1, 20);
+for i = 1:20
+    [svlist, b2] = solveSVMrdf(X_t, y_t, C, gammas(i));
+    y_pred = prediction(X_v, svlist, b2);
+    acc2 = accuracy(y_v, y_pred);
+    fprintf('gamma = %s, accuracy = %s\n', num2str(gammas(i)), num2str(acc2));
+end
+%}
 
-function [svlist, b] = solveSVM2(X, y, C)
-% use quadratic programming to solve linear SVM
+function [svlist, b] = solveSVMlinear(X, y, C)
+% use quadratic programming to solve SVM with linear kernel
 % Args:
 %   X: features (d, n)
 %   y: labels (n, 1)
@@ -41,7 +51,13 @@ function [svlist, b] = solveSVM2(X, y, C)
 
     [~, n] = size(X);    % dimension = d, number of rows = n
     f = -ones(n, 1);
-    H = (X'*X).*(y*y');
+    H = zeros(n, n);
+    for i = 1:n
+        for j = 1:n
+            H(i, j) = SupportVector.linear_kernel(X(:, i), X(:, j));
+        end
+    end
+    H = H .* (y*y');
     Aeq = y';            % equality constraint
     beq = 0;
     lb = zeros(n, 1);    % bound constraint
@@ -64,8 +80,7 @@ function [svlist, b] = solveSVM2(X, y, C)
     for k = 1:n_sv
         summation = 0;
         for i = 1:n_sv
-            summation = summation + svlist(i).alpha * svlist(i).y * svlist(i).x' * svlist(k).x;
-            %svlist(i).print()
+            summation = summation + svlist(i).alpha * svlist(i).y * SupportVector.linear_kernel(svlist(i).x, svlist(k).x);
         end
         bs = [bs, svlist(k).y - summation];
     end
@@ -73,8 +88,8 @@ function [svlist, b] = solveSVM2(X, y, C)
 end
 
 
-function [svlist, b] = solveSVM(X, y, C)
-% use quadratic programming to solve linear SVM
+function [svlist, b] = solveSVMrdf(X, y, C, gamma)
+% use quadratic programming to solve SVM with linear kernel
 % Args:
 %   X: features (d, n)
 %   y: labels (n, 1)
@@ -83,9 +98,15 @@ function [svlist, b] = solveSVM(X, y, C)
 %   svlist: a list of support vectors
 %   b: intercept, float scalar
 
-    [d, n] = size(X);    % dimension = d, number of rows = n
+    [~, n] = size(X);    % dimension = d, number of rows = n
     f = -ones(n, 1);
-    H = (X'*X).*(y*y');
+    H = zeros(n, n);
+    for i = 1:n
+        for j = 1:n
+            H(i, j) = SupportVector.rdf_kernel(X(:, i), X(:, j), gamma);
+        end
+    end
+    H = H .* (y*y');
     Aeq = y';            % equality constraint
     beq = 0;
     lb = zeros(n, 1);    % bound constraint
@@ -96,29 +117,41 @@ function [svlist, b] = solveSVM(X, y, C)
     
     svlist = [];
     for i = 1:n
-        if alpha(i) > eps('single')
+        if alpha(i) > eps('single')   % support vectors are those whose alpha > 0
             svlist = [svlist, SupportVector(alpha(i), y(i), X(:, i))];
         end
     end
 
-    w = zeros(d, 1);
-    for i = 1:n
-        w = w + alpha(i) * y(i) * X(:, i);
+    [~, n_sv] = size(svlist);
+    fprintf('# of SV = %s\n', num2str(n_sv));
+
+    bs = [];
+    for k = 1:n_sv
+        summation = 0;
+        for i = 1:n_sv
+            summation = summation + svlist(i).alpha * svlist(i).y * SupportVector.rdf_kernel(svlist(i).x, svlist(k).x, gamma);
+        end
+        bs = [bs, svlist(k).y - summation];
     end
-    mymin = 999999999;
-    mymax = -mymin;
+    b = (min(bs) + max(bs))/2;
+end
+
+
+function gamma = gamma_start(X)
+% Get the starting point of gamma
+% Args:
+%   svlist: a list of SupportVector
+% Return:
+%   float scalar
+    gammas = [];
+    [~, n] = size(X);
     for i = 1:n
-        temp = w' * X(:, i);
-        %fprintf('%s \n', num2str(temp))
-        if y(i) == 1
-            mymin = min(mymin, temp);
-        elseif y(i) == -1
-            mymax = max(mymax, temp);
-        else
-            fprintf('Error in the labels');
+        for j = (i+1):n
+            sub = X(:, i) - X(:, j);
+            gammas = [gammas, sub' * sub];
         end
     end
-    b = -(mymax + mymin)/2;
+    gamma = mean(gammas);
 end
 
 
