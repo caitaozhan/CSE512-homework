@@ -22,7 +22,7 @@ fprintf('The accuracy on the validation dataset = %s \n', num2str(acc1))
 
 % Objective %
 obj_t_p = objective_primal(X_v, y_v, w, b, C);
-fprintf('The objective value = %s \n', num2str(obj_t_p))
+fprintf('The objective value = %s \n', num2str(obj_t_p));
 
 %obj_t_p = objective_primal(X_t, y_t, w, b, C);
 %obj_t_d = objective_dual(X_t, y_t, alpha);
@@ -169,7 +169,7 @@ function pred = prediction_score(X, svlist, b)
             summation = summation + svlist(j).alpha * svlist(j).y * svlist(j).x' * X(:, i);
         end
         summation = summation + b;
-        pred = [pred, summation]
+        pred = [pred, summation];
     end
 end
 

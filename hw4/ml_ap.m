@@ -8,7 +8,7 @@ function [ap, prec, rec] = ml_ap(confidence, gt, draw)
 
     if length(confidence) ~= length(gt)
         error('mismatch');
-    end;
+    end
     confidence = confidence(:);
     gt = gt(:);
     [~,si]=sort(confidence, 'descend');

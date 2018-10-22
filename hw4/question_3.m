@@ -52,7 +52,7 @@ end
 
 
 function progress = test_progress(objs)
-% See whether there is progress
+% When there is progress, the objective value increases
 % Args:
 %   objs: a list of objective values
 % Return:
@@ -161,7 +161,7 @@ function [trD, trLb] = update_trainDataLb(trD, trLb, A, B, progress)
 %   trD: updated training dataset
 %   trLb: updated labels
     
-    if progress == 1
+    if progress == 1        % is there is progress
         trD = trD(:, ~A);   % remove non-support vectors in NegD
         trLb = trLb(~A, :); % remove the corresbonding labels
     end

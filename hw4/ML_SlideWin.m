@@ -85,7 +85,7 @@ classdef ML_SlideWin
         % The number of batches is automatically determined, based on memory limit
         function nBatch = getNBatch(self)
             nBatch = self.nBatch;
-        end;
+        end
     
         % Get the batch of windows 
         % batchId: ID of the batch

@@ -1,6 +1,6 @@
 % Solves question 2.6
 
-
+%{
 data = load('q2_1_data.mat');
 X_t  = data.trD;    % training
 y_t  = data.trLb;
@@ -30,10 +30,8 @@ for i = 1:20
     acc2 = accuracy(y_v, y_pred);
     fprintf('gamma = %s, accuracy = %s\n', num2str(gammas(i)), num2str(acc2));
 end
+%}
 
-
-
-%{
 data = load('q2_2_data.mat');
 X_t  = data.trD;       % training
 y_t  = data.trLb;
@@ -41,7 +39,27 @@ X_v  = data.valD;      % validation
 y_v  = data.valLb;
 X_test  = data.tstD;   % testing
 
-function binarySVMs = solveMultiClassSVMlinear(X, y, C)
+
+C = 1;
+%binarySVMs = solve_svm_multi_class_linear(X_t, y_t, C);
+y_pred = prediction_linear_multi(X_v, binarySVMs);
+acc = accuracy(y_v, y_pred);
+y_pred = prediction_linear_multi(X_test, binarySVMs);
+csvwrite('pred_linear_C_1.csv', y_pred');
+
+%{
+C = 1;
+gamma = gamma_start(X_t);
+gamma = 5000;
+binarySVMs = solve_svm_multi_class_rdf(X_t, y_t, C, gamma);
+y_pred = prediction_rdf_multi(X_v, binarySVMs, gamma);
+acc2 = accuracy(y_v, y_pred);
+y_pred = prediction_rdf_multi(X_test, binarySVMs, gamma);
+csvwrite('pred_rdf_C_100.csv', y_pred');
+%}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function binarySVMs = solve_svm_multi_class_linear(X, y, C)
 % use quadratic programming to solve multi-class SVM using one-versus-rest with linear kernel
 % Args:
 %   X: features (d, n)
@@ -51,18 +69,139 @@ function binarySVMs = solveMultiClassSVMlinear(X, y, C)
 %   a list of BinarySVM
     binarySVMs = [];
     [n, ~] = size(y);
-    for label = 1:10               % there are 10 different labels
+    for label = 1:10               % there are 10 different labels from 1 to 10
         y_binary = ones(n, 1);
         for i = 1:n
             if y(i) ~= label
                 y_binary(i) = -1;  % one-versus-rest
             end 
         end
-        [svlist, b] = solveSVMlinear(X, y_binary, C);
-        binarySVMs = [binarySVMS, BinarySVM(label, svlist, b)];
+        [svlist, b] = solve_svm_linear(X, y_binary, C);
+        binarySVMs = [binarySVMs, BinarySVM(label, svlist, b)];
     end
 end
-%}
+
+
+function pred = prediction_linear_multi(X, binarySVMs)
+% Prediction with linear kernal
+% Args:
+%   X: features (d, n)
+%   binarySVMs: a list of BinarySVM
+% Return:
+%   pred: (n, 1)
+    [~, n] = size(X);           % n number of sample
+    [~, m] = size(binarySVMs);  % m number of BinarySVM
+    pred = [];
+    for i = 1:n        % A particular point is assigned to the class for which 
+        maxi = -1;     % the distance from the margin, in the positive direction, is maximal
+        pred_temp = 0;
+        for j = 1:m
+            label = binarySVMs(j).label;
+            svlist = binarySVMs(j).svlist;
+            b = binarySVMs(j).b;
+            score = prediction_linear_score(X(:, i), svlist, b);
+            if score > maxi
+                pred_temp = label;
+                maxi = score;
+            end
+        end
+        pred = [pred, pred_temp];
+    end
+end
+
+
+function score = prediction_linear_score(x, svlist, b)
+% Prediction using alpha's and b, labels with linear kernel
+% Time complexity: worst case O(n^2 * d), but usally O(nd*SV) where SV is
+% the number of support vectors is usually << n
+% Args:
+%   x: features (d, 1), a single sample
+%   y: labels (n, 1)
+%   svlist: a list of support vectors
+%   b: intercept, float
+% Return:
+%   a float scalar
+    summation = 0;
+    [~, n_sv] = size(svlist);
+    for j = 1:n_sv
+        summation = summation + svlist(j).alpha * svlist(j).y * SupportVector.linear_kernel(svlist(j).x, x);
+    end
+    score = summation + b;
+end
+%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%
+function binarySVMs = solve_svm_multi_class_rdf(X, y, C, gamma)
+% use quadratic programming to solve multi-class SVM using one-versus-rest with rdf kernel
+% Args:
+%   X: features (d, n)
+%   y: labels (n, 1)
+%   C: 0 <= alpha <= C
+% Return:
+%   a list of BinarySVM
+    binarySVMs = [];
+    [n, ~] = size(y);
+    for label = 1:10               % there are 10 different labels from 1 to 10
+        y_binary = ones(n, 1);
+        for i = 1:n
+            if y(i) ~= label
+                y_binary(i) = -1;  % one-versus-rest
+            end 
+        end
+        [svlist, b] = solve_svm_rdf(X, y_binary, C, gamma);
+        binarySVMs = [binarySVMs, BinarySVM(label, svlist, b)];
+    end
+end
+
+
+function pred = prediction_rdf_multi(X, binarySVMs, gamma)
+% Prediction with rdf kernal
+% Args:
+%   X: features (d, n)
+%   binarySVMs: a list of BinarySVM
+% Return:
+%   pred: (n, 1)
+    [~, n] = size(X);           % n number of sample
+    [~, m] = size(binarySVMs);  % m number of BinarySVM
+    pred = [];
+    for i = 1:n        % A particular point is assigned to the class for which 
+        maxi = -1;     % the distance from the margin, in the positive direction, is maximal
+        pred_temp = 0;
+        for j = 1:m
+            label = binarySVMs(j).label;
+            svlist = binarySVMs(j).svlist;
+            b = binarySVMs(j).b;
+            score = prediction_rdf_score(X(:, i), svlist, b, gamma);
+            if score > maxi
+                pred_temp = label;
+                maxi = score;
+            end
+        end
+        pred = [pred, pred_temp];
+    end
+end
+
+
+function score = prediction_rdf_score(x, svlist, b, gamma)
+% Prediction using alpha's and b, labels with rdf kernel
+% Time complexity: worst case O(n^2 * d), but usally O(nd*SV) where SV is
+% the number of support vectors is usually << n
+% Args:
+%   x: features (d, 1), a single sample
+%   y: labels (n, 1)
+%   svlist: a list of support vectors
+%   b: intercept, float
+% Return:
+%   a float scalar
+    summation = 0;
+    [~, n_sv] = size(svlist);
+    for j = 1:n_sv
+        summation = summation + svlist(j).alpha * svlist(j).y * SupportVector.rdf_kernel(svlist(j).x, x, gamma);
+    end
+    score = summation + b;
+end
+%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
@@ -172,8 +311,8 @@ function gamma = gamma_start(X)
 %   float scalar
     gammas = [];
     [~, n] = size(X);
-    for i = 1:n
-        for j = (i+1):n
+    for i = 1:4:n
+        for j = (i+1):7:n
             sub = X(:, i) - X(:, j);
             gammas = [gammas, sub' * sub];
         end
