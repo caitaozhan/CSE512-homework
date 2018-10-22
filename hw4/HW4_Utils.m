@@ -5,7 +5,7 @@ classdef HW4_Utils
 % Last modified: 30-Sep-2018
 
     properties (Constant)        
-        dataDir = '../hw4data';
+        dataDir = '../hw4';
         
         % Anotated upper bodies have different sizes. To train a classifier, we need to normalize to
         % a standard size
@@ -29,9 +29,9 @@ classdef HW4_Utils
                 subplot(nR, nC, i); imshow(im);
                 if ~isempty(ubAnno{idx})
                     HW4_Utils.drawRects(ubAnno{idx});
-                end;                    
+                end
             end
-        end;
+        end
         
         % Display HOG features for random positive and negative images
         function demo2()
@@ -60,21 +60,24 @@ classdef HW4_Utils
                 hogIm = vl_hog('render', hogFeat);
                 subplot(nR, nC, 2*i); imshow(hogIm);
                 title(strTitle);
-            end            
-        end;
+            end
+        end
         
         % Get the train and validation data and annotation to train the classifier
         % Positive instances: all annotated upper bodies
         % Negative instances: random image patches
-        function [trD, trLb, valD, valLb, trRegs, valRegs] = getPosAndRandomNeg()
-            cacheFile = sprintf('%s/trainval_random.mat', HW4_Utils.dataDir);
-            if exist(cacheFile, 'file')
-                load(cacheFile);
-            else
-                [trD, trLb, trRegs]   = HW4_Utils.getPosAndRandomNegHelper('train');
-                [valD, valLb, valRegs] = HW4_Utils.getPosAndRandomNegHelper('val');
-                save(cacheFile, 'trD', 'trLb', 'valD', 'valLb', 'trRegs', 'valRegs');
-            end;
+        function [trD, trLb, valD, valLb, trRegs, valRegs, startNegDtrain, startNegDval] = getPosAndRandomNeg()
+            %cacheFile = sprintf('%s/trainval_random.mat', HW4_Utils.dataDir);
+            %if exist(cacheFile, 'file')
+            %    load(cacheFile);
+            %else
+            %    [trD, trLb, trRegs]   = HW4_Utils.getPosAndRandomNegHelper('train');
+            %    [valD, valLb, valRegs] = HW4_Utils.getPosAndRandomNegHelper('val');
+            %    save(cacheFile, 'trD', 'trLb', 'valD', 'valLb', 'trRegs', 'valRegs');
+            %end
+            [trD, trLb, trRegs, startNegDtrain]  = HW4_Utils.getPosAndRandomNegHelper('train');
+            [valD, valLb, valRegs, startNegDval] = HW4_Utils.getPosAndRandomNegHelper('val');
+            
             trD = HW4_Utils.l2Norm(double(trD));
             valD = HW4_Utils.l2Norm(double(valD));
         end
@@ -122,7 +125,7 @@ classdef HW4_Utils
                     [hogFeats, topLefts_s{i}] = obj.getBatch(i);
                     D = HW4_Utils.l2Norm(hogFeats);
                     scores_s{i} = D'*w + b;
-                end;
+                end
                 scores_s   = cat(1, scores_s{:});
                 topLefts_s = cat(2, topLefts_s{:});             
                 
@@ -146,15 +149,15 @@ classdef HW4_Utils
             if exist('shldDisplay', 'var') && shldDisplay                
                 imshow(im);            
                 HW4_Utils.drawRects(rects(:,1:4));
-            end;
-        end;
+            end
+        end
         
         % Generate detection result file for a particular dataset
         % dataset: either 'train', 'val', or 'test'
         % outFile: path to save the result.
         function genRsltFile(w, b, dataset, outFile)
             imFiles = ml_getFilesInDir(sprintf('%s/%sIms/', HW4_Utils.dataDir, dataset), 'jpg');
-            nIm = length(imFiles);            
+            nIm = length(imFiles);
             rects = cell(1, nIm);
             startT = tic;
             for i=1:nIm
@@ -164,8 +167,7 @@ classdef HW4_Utils
             end
             save(outFile, 'rects');
             fprintf('results have been saved to %s\n', outFile);
-        end;
-
+        end
 
         
         % Calculate the Average precision for a given result file and dataset
@@ -190,7 +192,7 @@ classdef HW4_Utils
                     ub = ubs_i(:,j);
                     overlap = HW4_Utils.rectOverlap(rects_i, ub);
                     isTruePos_i(overlap >= 0.5) = 1;
-                end;
+                end
                 isTruePos{i} = isTruePos_i;
             end
             detScores = cat(2, detScores{:});
@@ -207,7 +209,7 @@ classdef HW4_Utils
         %   D: d*n data matrix, each column is a HOG feature vector
         %   lb: n*1 label vector, entries are 1 or -1        
         %   imRegs: 64*64*3*n array for n images
-        function [D, lb, imRegs] = getPosAndRandomNegHelper(dataset)
+        function [D, lb, imRegs, startNegD] = getPosAndRandomNegHelper(dataset)
             rng(1234); % reset random generator. Keep same seed for repeatability
             load(sprintf('%s/%sAnno.mat', HW4_Utils.dataDir, dataset), 'ubAnno');
             [posD, negD, posRegs, negRegs] = deal(cell(1, length(ubAnno)));            
@@ -249,11 +251,11 @@ classdef HW4_Utils
                     randRects = randRects(:, overlap < 0.3);
                     if isempty(randRects)
                         break;
-                    end;
-                end;
+                    end
+                end
                 
                 % Now extract features for some few random patches
-                nNeg2SamplePerIm = 2;
+                nNeg2SamplePerIm = 4;
                 [D_i, R_i] = deal(cell(1, nNeg2SamplePerIm));
                 for j=1:nNeg2SamplePerIm
                     imReg = im(randRects(2,j):randRects(4,j), randRects(1,j):randRects(3,j),:);
@@ -265,11 +267,14 @@ classdef HW4_Utils
                 negRegs{i} = cat(4, R_i{:});
             end    
             posD = cat(2, posD{:});
-            negD = cat(2, negD{:});   
+            negD = cat(2, negD{:});
+            [~, posSize] = size(posD);
+            startNegD = posSize + 1;
+            %fprintf('start neg D = %s\n', num2str(startNegD));
             D = cat(2, posD, negD);
             lb = [ones(size(posD,2),1); -ones(size(negD,2), 1)];
             imRegs = cat(4, posRegs{:}, negRegs{:});            
-        end;
+        end
                 
         % rects: 4*k or 5*k matrix for k rectangles, 
         %   rects(1:4,i) is left, top, right, bottom
@@ -282,9 +287,9 @@ classdef HW4_Utils
                     text(rects(1,i), rects(2,i), sprintf('%d: %.2f', i, rects(5,i)), ...
                         'Color', 'green', 'FontSize', 14, 'HorizontalAlignment', 'left', ...
                         'VerticalAlignment', 'bottom');
-                end;
-            end;
-        end;
+                end
+            end
+        end
         
         % Compute the symmetric intersection over union overlap between rects set of
         % rects and a single rect
@@ -316,14 +321,14 @@ classdef HW4_Utils
         function featVec = cmpFeat(imReg)
             featVec = vl_hog(im2single(imReg), HW4_Utils.hogCellSz);            
             featVec = featVec(:);
-        end;
+        end
         
         % L2 normalization
         % D: d*n matrix for n data points
         function D = l2Norm(D)
             % Add epsilon to avoid division by 0
             D = D./repmat(sqrt(sum(D.^2,1)) + eps, size(D,1), 1);
-        end;
+        end
         
         % Non-maximum suppression.
         % Greedily select high-scoring detections and skip detections
@@ -421,11 +426,11 @@ classdef HW4_Utils
                     D = cell(1, size(imRegs,3));
                     for j=1:size(imRegs,3)
                         D{j} = HW4_Utils.cmpFeat(imRegs(:,:,j));                         
-                    end;
+                    end
                     D = cat(2, D{:});
                     D = HW4_Utils.l2Norm(D);
                     scores_s{i} = D'*w + b;
-                end;
+                end
                 scores_s   = cat(1, scores_s{:});
                 topLefts_s = cat(2, topLefts_s{:});
                 rects_s = [topLefts_s; topLefts_s + repmat(winSz', 1, size(topLefts_s,2))];
@@ -435,7 +440,7 @@ classdef HW4_Utils
             rects = cat(2, rects{:});    
             rects = HW4_Utils.nms(rects, 0.5); 
             
-        end;
+        end
     end    
 end
 
