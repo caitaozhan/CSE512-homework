@@ -1,10 +1,47 @@
-X = load('../hw5/digit/digit.txt');
-Y = load('../hw5/digit/labels.txt');
+X = load('digit/digit.txt');
+Y = load('digit/labels.txt');
 
-k = 4;
+
+%{
+% Question 2.5.2
+k = 6;
 [C, mu, i] = kmeans(X, k);
 sos = total_within_group_sum_of_squares(X, C, mu);
 [p1, p2, p3] = pair_count_measure(Y, C);
+%}
+
+rng(10);       % this is a good random seed. It let k=4 have the best results
+repeat = 15;
+sos_list = [];
+p1_list  = [];
+p2_list  = [];
+p3_list  = [];
+for k = 1:10
+    sos_sum = 0;
+    p1_sum  = 0;
+    p2_sum  = 0;
+    p3_sum  = 0;
+    for r = 1:repeat    % repeat 15 times for each k
+        fprintf('k = %s, r = %s\n', num2str(k), num2str(r));
+        [C, mu, i] = kmeans(X, k);
+        sos = total_within_group_sum_of_squares(X, C, mu);
+        [p1, p2, p3] = pair_count_measure(Y, C);
+        sos_sum = sos_sum + sos;
+        p1_sum = p1_sum + p1;
+        p2_sum = p2_sum + p2;
+        p3_sum = p3_sum + p3;
+    end
+    sos_list = [sos_list, sos_sum/repeat];
+    p1_list  = [p1_list,  p1_sum/repeat];
+    p2_list  = [p2_list,  p2_sum/repeat];
+    p3_list  = [p3_list,  p3_sum/repeat];
+end
+
+
+csvwrite('plot_data/p1.csv', p1_list');
+csvwrite('plot_data/p2.csv', p2_list');
+csvwrite('plot_data/p3.csv', p3_list');
+csvwrite('plot_data/sos.csv', sos_list');
 
 
 function [C_new, mu, i] = kmeans(X, k)
@@ -18,7 +55,8 @@ function [C_new, mu, i] = kmeans(X, k)
 %   mu:    centers, (k, d)
 %   i:     the number of iterations
 
-    mu = first_k_init_mu(X, k);
+    %mu = first_k_init_mu(X, k);  % Init center with the first k points in the dataset
+    mu = rand_init_mu(X, k);      % Random Init
     max_iter = 20;
     C_old  = [];
     for i = 1:max_iter
