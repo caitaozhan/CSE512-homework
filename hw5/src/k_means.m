@@ -10,8 +10,8 @@ sos = total_within_group_sum_of_squares(X, C, mu);
 [p1, p2, p3] = pair_count_measure(Y, C);
 %}
 
-rng(10);       % this is a good random seed. It let k=4 have the best results
-repeat = 15;
+rng(0);       % this is a good random seed. It let k=4 have the best results
+repeat = 10;
 sos_list = [];
 p1_list  = [];
 p2_list  = [];
@@ -110,23 +110,18 @@ end
 
 
 function mu = rand_init_mu(X, k)
-% Random init the k mu (center)
+% Choose k points from the dataset at random
 % Args:
 %   X: feature data, (n, d)
 %   k: number of centers
 % Return:
 %   mu: centers, (k, d)
 
-    [~, d] = size(X);
+    [n, ~] = size(X);
+    perm = randperm(n, k);
     mu = [];
-    mins = min(X);  % the min of each dimension/feature, (array)
-    maxs = max(X);  % the max of each dimension/feature, (array)
     for i = 1:k
-        mu_i = [];
-        for j = 1:d
-            mu_i = [mu_i, randi([mins(j), maxs(j)], 1)];
-        end
-        mu = [mu; mu_i];
+        mu = [mu; X(perm(i), :)];
     end
 end
 

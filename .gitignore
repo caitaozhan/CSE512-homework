@@ -12,3 +12,6 @@ hw4/*.jpg
 hw5/bigbangtheory/
 hw5/digit/
 hw5/src/*.m~
+hw5/libsvm-3.23/
+hw5/bigbangtheory_v2/
+hw5/sample_submission.csv
