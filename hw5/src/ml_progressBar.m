@@ -9,7 +9,7 @@ function ml_progressBar(k,n, prefixMessage, startT)
 
 if ~exist('prefixMessage', 'var') || isempty(prefixMessage)
     prefixMessage = 'Progress';
-end;
+end
 
 nDigit = length(sprintf('%d',n));
 
@@ -28,4 +28,4 @@ elseif k == n
     %fprintf(['\n', prefixMessage ' ' format], k, 100);
 else
     fprintf([delFormat, format], k, 100*k/n);
-end;
+end
