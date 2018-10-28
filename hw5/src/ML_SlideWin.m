@@ -61,7 +61,7 @@ classdef ML_SlideWin
                 
                 % pixCmbn{i}{j} is the index in the dimension i of the j^th pixel of the window
                 pixCmbn{i} = pixCmbn{i}(:);
-            end;
+            end
             
             startLinIdxs = sub2ind(size(Data), startCmbn{:}); % linear indexes of start points            
             obj.winLinIdxs = sub2ind(size(Data), pixCmbn{:}) - 1; % linear indexes of the first window
@@ -73,7 +73,7 @@ classdef ML_SlideWin
                         
             if ~exist('memLimit', 'var') || isempty(memLimit)
                 memLimit = 100;
-            end;
+            end
             
             % maximum number of elmements for a matrix, assuming double precision (16Bytes)
             maxMatrixSize = memLimit*10^6/16;             
@@ -97,7 +97,7 @@ classdef ML_SlideWin
         % The number of batches is automatically determined, based on memory limit
         function nBatch = getNBatch(self)
             nBatch = self.nBatch;
-        end;
+        end
     
         % Get the batch of windows 
         % batchId: ID of the batch
@@ -130,13 +130,13 @@ classdef ML_SlideWin
                 if d > k
                     for i=1:k
                         D(:,i) = self.Data(self.winLinIdxs + batchIdxs(i));
-                    end;
+                    end
                 else
                     for j=1:d
                         D(j,:) = self.Data(batchIdxs + self.winLinIdxs(j));
-                    end;
-                end;
-            end            
+                    end
+                end
+            end
         end
         
         
@@ -150,13 +150,13 @@ classdef ML_SlideWin
             [randWins, randLocs] = deal(cell(1, self.nBatch));
             for i=1:self.nBatch
                 [randWins{i}, randLocs{i}] = self.getBatch(i, nSamplePerBatch);              
-            end;
+            end
             randWins = cat(2, randWins{:});
             randLocs = cat(2, randLocs{:});
             nSample = min(nSample, size(randWins,2));
             randWins = randWins(:, 1:nSample);
             randLocs = randLocs(:, 1:nSample);
-        end;
+        end
     end
     
     methods (Static)

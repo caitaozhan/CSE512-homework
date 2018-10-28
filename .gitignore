@@ -15,3 +15,4 @@ hw5/src/*.m~
 hw5/libsvm-3.23/
 hw5/bigbangtheory_v2/
 hw5/sample_submission.csv
+hw5/src/*.mexmaci64

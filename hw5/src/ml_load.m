@@ -14,9 +14,9 @@ A = load(dataFile, varargin{:});
 
 if nargout ~= nargin - 1
     error('Expected number of outputs is different from number of loaded variables');
-end;
+end
 
 varargout = cell(1, nargout);
 for i=1:nargout
     varargout{i} = A.(varargin{i});
-end;
+end
