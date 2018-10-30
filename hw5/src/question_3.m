@@ -31,49 +31,34 @@ for i = 1:length(C)
 end
 %}
 
-%{
-gamma = 0.5;
-%[trainK, testK] = cmpExpX2Kernel(trD, tstD, gamma);
+
+G = [0.1, 0.4780, 1, 2];
 C = [0.1, 1, 10, 20, 40, 80, 160];
-for i = 1:length(C)
-    options = sprintf('-c %d -g 0.5 -t 4 -v 5 -q', C(i));
-    cv_accuracy = svmtrain(trLbs, trainK, options);
-    fprintf('options = %s, accuracy = %s\n', options, cv_accuracy);
-end
-%}
-
-
-function gamma = gamma_start2(X)
-% Get the default value of gamma for exponential kernel
-% Args:
-%   X: feature dataset
-% Return:
-%   gamma, float
-
-    [n, ~] = size(X);
-    gammas = [];
-    for i = 1:n
-        for j = (i+1):n
-            gammas = [gammas, exp_kernel(X, i, j)];
-        end
+for j = 1:length(G)
+    [trainK] = cmpExpX2Kernel(trD, G(j));
+    for i = 1:length(C)
+        options = sprintf('-c %d -g %d -t 4 -v 5 -q', C(i), G(j));
+        cv_accuracy = svmtrain(trLbs, trainK, options);
+        fprintf('options = %s, accuracy = %s\n', options, cv_accuracy);
     end
-    gamma = mean(gammas);
 end
+
+
+gamma = gamma_start2(trD); % gamma = 0.4780
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Write code for training svm and prediction here            %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [trainK, testK] = cmpExpX2Kernel(trainD, testD, gamma)
+function [trainK] = cmpExpX2Kernel(trainD, gamma)
 % Precomputed kernel for SVM
 % Args:
 %   trainD: training feature dataset, (n, d)
-%   testD:  testing feature dataset, (n, d)
 %   gamma:  hyper parameter, float
 % Return:
 %   trainK: precomputed kernel for training dateset
-%   testK:  precomputed kernel for testing dataset
 
     [n, ~] = size(trainD);
     trainK = [];
@@ -86,21 +71,7 @@ function [trainK, testK] = cmpExpX2Kernel(trainD, testD, gamma)
         trainK = [trainK; kernel_i];
     end
     trainK = [(1:n)', trainK];
-    
-    [n, ~] = size(testD);
-    testK = [];
-    for i = 1:n
-        kernel_i = [];
-        for j = 1:n
-            kernel_ij = exp_kernel(testD, i, j, gamma);
-            kernel_i = [kernel_i, kernel_ij];
-        end
-        testK = [testK; kernel_i];
-    end
-    testK = [(1:n)', testK];
-    
     trainK = double(trainK);
-    testK = double(testK);
 end
 
 
