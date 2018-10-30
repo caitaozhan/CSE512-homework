@@ -6,7 +6,7 @@ classdef HW5_BoW
 % Last modified: 16-Oct-2018    
     
     methods (Static)
-        function main()
+        function cv_accuracy = main()
             scales = [8, 16, 32, 64];
             normH = 16;
             normW = 16;
@@ -16,28 +16,39 @@ classdef HW5_BoW
             tstIds = ml_load('bigbangtheory_v2/test.mat', 'imIds'); 
             
             trD  = HW5_BoW.cmpFeatVecs(trIds, scales, normH, normW, bowCs);
-            tstD = HW5_BoW.cmpFeatVecs(tstIds, scales, normH, normW, bowCs);
-            
+            %tstD = HW5_BoW.cmpFeatVecs(tstIds, scales, normH, normW, bowCs);
+
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Write code for training svm and prediction here            %
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            C = [0.1, 1, 10, 20, 40, 80, 160];
+            G = [0.1, 1, 10, 20, 40, 80, 160];
 
+            for i = 1:length(C)
+                for j = 1:length(G)
+                    options = sprintf('-c %d -g %d -v 5 -q', C(i), G(j));
+                    cv_accuracy = svmtrain(trLbs, trD, options);
+                    fprintf('options = %s, accuracy = %s\n', options, cv_accuracy);
+                end
+            end
+            
+            
         end
 
         function bowCs = learnDictionary(scales, normH, normW)
             % Number of random patches to build a visual dictionary
             % Should be around 1 million for a robust result
             % We set to a small number her to speed up the process. 
-            nPatch2Sample = 10000;
+            nPatch2Sample = 100000;
 
             % load train ids
-            trIds = ml_load('bigbangtheory_v2/train.mat', 'imIds'); 
+            trIds = ml_load('../bigbangtheory_v2/train.mat', 'imIds'); 
             nPatchPerImScale = ceil(nPatch2Sample/length(trIds)/length(scales));
             
             randWins = cell(length(scales), length(trIds)); % to store random patches
             for i=1:length(trIds)
                 ml_progressBar(i, length(trIds), 'Randomly sample image patches');
-                im = imread(sprintf('bigbangtheory_v2/%06d.jpg', trIds(i)));
+                im = imread(sprintf('../bigbangtheory_v2/%06d.jpg', trIds(i)));
                 im = double(rgb2gray(im));
                 for j=1:length(scales)
                     scale = scales(j);
@@ -66,7 +77,7 @@ classdef HW5_BoW
             % Input: randWinds contains your data points                 %
             % Output: bowCs: centroids from k-means, one column for each centroid  
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            k = 100;
+            k = 1000;
             [~, mu, ~] = k_means(randWins', k);
             bowCs = mu';
         end

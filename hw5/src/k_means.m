@@ -13,19 +13,20 @@ function [C_new, mu, i] = k_means(X, k)
     max_iter = 20;
     C_old  = [];
     for i = 1:max_iter
-        %fprintf('iter = %s\n', num2str(i));
-        C_new  = classify(X, mu);  % coordinate descent on C
-        mu = recenter(X, C_new);       % coordinate descent on mu
-        
+        %fprintf('i = %d\n', i);
+        C_new = classify(X, mu);        % coordinate descent on C
+        mu    = recenter(X, C_new);     % coordinate descent on mu
+        %fprintf('size(mu) = %d \n\n', size(mu, 1));
+
         bool = check_convergence(C_old, C_new);
         if bool == true
             return
         else
             C_old = C_new;
         end
-        
     end
 end
+
 
 function bool = check_convergence(C_old, C_new)
 % Check convergence: no change in label assignment from one step to another
@@ -48,6 +49,7 @@ function bool = check_convergence(C_old, C_new)
         end
     end
 end
+
 
 function mu = first_k_init_mu(X, k)
 % Init the centers with the first k points in the dataset
@@ -97,7 +99,8 @@ function C = classify(X, mu)
         mini = 999999999;
         label = 1;
         for j = 1:k
-            dis = pdist([X(i, :); mu(j, :)], 'euclidean');
+            sub = X(i, :) - mu(j, :);
+            dis = sqrt(sub * sub');
             if dis < mini
                 mini = dis;
                 label = j;

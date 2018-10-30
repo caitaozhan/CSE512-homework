@@ -1,4 +1,125 @@
-%test  = load('test.mat');
-%train = load('train.mat');
+%cv_accuracy = HW5_BoW.main();
 
-HW5_BoW.main();
+rng(0);
+scales = [8, 16, 32, 64];
+normH = 16;
+normW = 16;
+%bowCs = HW5_BoW.learnDictionary(scales, normH, normW);
+
+[trIds, trLbs] = ml_load('../bigbangtheory_v2/train.mat',  'imIds', 'lbs');             
+tstIds = ml_load('../bigbangtheory_v2/test.mat', 'imIds'); 
+
+%trD  = HW5_BoW.cmpFeatVecs(trIds, scales, normH, normW, bowCs);
+%trD = trD';
+%tstD = HW5_BoW.cmpFeatVecs(tstIds, scales, normH, normW, bowCs);
+%tstD = tstD';
+
+%3.4.2
+%cv_accuracy = svmtrain(trLbs, trD, '-v 5');
+
+%{
+%3.4.3
+C = [0.1, 1, 10, 20, 40, 80, 160];
+G = [0.1, 1, 10, 20, 40, 80, 160];
+
+for i = 1:length(C)
+    for j = 1:length(G)
+        options = sprintf('-c %d -g %d -v 5 -q', C(i), G(j));
+        cv_accuracy = svmtrain(trLbs, trD, options);
+        fprintf('options = %s, accuracy = %s\n', options, cv_accuracy);
+    end
+end
+%}
+
+%{
+gamma = 0.5;
+%[trainK, testK] = cmpExpX2Kernel(trD, tstD, gamma);
+C = [0.1, 1, 10, 20, 40, 80, 160];
+for i = 1:length(C)
+    options = sprintf('-c %d -g 0.5 -t 4 -v 5 -q', C(i));
+    cv_accuracy = svmtrain(trLbs, trainK, options);
+    fprintf('options = %s, accuracy = %s\n', options, cv_accuracy);
+end
+%}
+
+
+function gamma = gamma_start2(X)
+% Get the default value of gamma for exponential kernel
+% Args:
+%   X: feature dataset
+% Return:
+%   gamma, float
+
+    [n, ~] = size(X);
+    gammas = [];
+    for i = 1:n
+        for j = (i+1):n
+            gammas = [gammas, exp_kernel(X, i, j)];
+        end
+    end
+    gamma = mean(gammas);
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Write code for training svm and prediction here            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [trainK, testK] = cmpExpX2Kernel(trainD, testD, gamma)
+% Precomputed kernel for SVM
+% Args:
+%   trainD: training feature dataset, (n, d)
+%   testD:  testing feature dataset, (n, d)
+%   gamma:  hyper parameter, float
+% Return:
+%   trainK: precomputed kernel for training dateset
+%   testK:  precomputed kernel for testing dataset
+
+    [n, ~] = size(trainD);
+    trainK = [];
+    for i = 1:n
+        kernel_i = [];
+        for j = 1:n
+            kernel_ij = exp_kernel(trainD, i, j, gamma);
+            kernel_i = [kernel_i, kernel_ij];
+        end
+        trainK = [trainK; kernel_i];
+    end
+    trainK = [(1:n)', trainK];
+    
+    [n, ~] = size(testD);
+    testK = [];
+    for i = 1:n
+        kernel_i = [];
+        for j = 1:n
+            kernel_ij = exp_kernel(testD, i, j, gamma);
+            kernel_i = [kernel_i, kernel_ij];
+        end
+        testK = [testK; kernel_i];
+    end
+    testK = [(1:n)', testK];
+    
+    trainK = double(trainK);
+    testK = double(testK);
+end
+
+
+function kernel = exp_kernel(X, i, j, gamma)
+% Compute the exponential \chi kernel between the ith and jth sample, i.e. K(Xi, Xj)
+% Args:
+%   X: feature dataset, (n, d)
+%   i: the ith sample
+%   j: the jth sample
+% Return:
+%   kernel: float
+
+    x = X(i, :);
+    y = X(j, :);
+    d = length(x);
+    kernel = 0;
+    for k = 1:d
+        kernel = kernel + (x(k)- y(k))^2 / (x(k) + y(k) + eps('single'));
+    end
+    kernel = exp(kernel * (-1/gamma));
+end
+

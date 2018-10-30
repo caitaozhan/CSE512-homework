@@ -1,5 +1,5 @@
-X = load('digit/digit.txt');
-Y = load('digit/labels.txt');
+X = load('../digit/digit.txt');
+Y = load('../digit/labels.txt');
 
 
 %{
@@ -11,6 +11,7 @@ sos = total_within_group_sum_of_squares(X, C, mu);
 %}
 
 
+% Question 2.5.3 ~ 2.5.4
 rng(0);       % this is a good random seed. It let k=4 have the best results
 repeat = 10;
 sos_list = [];
@@ -26,9 +27,9 @@ for k = 1:10
         fprintf('k = %s, r = %s\n', num2str(k), num2str(r));
         
         [C, mu, i] = k_means(X, k);
-        
         sos = total_within_group_sum_of_squares(X, C, mu);
         [p1, p2, p3] = pair_count_measure(Y, C);
+        
         sos_sum = sos_sum + sos;
         p1_sum = p1_sum + p1;
         p2_sum = p2_sum + p2;
@@ -41,7 +42,8 @@ for k = 1:10
 end
 
 
-csvwrite('plot_data/p1.csv', p1_list');
-csvwrite('plot_data/p2.csv', p2_list');
-csvwrite('plot_data/p3.csv', p3_list');
-csvwrite('plot_data/sos.csv', sos_list');
+csvwrite('../plot_data/p1.csv', p1_list');
+csvwrite('../plot_data/p2.csv', p2_list');
+csvwrite('../plot_data/p3.csv', p3_list');
+csvwrite('../plot_data/sos.csv', sos_list');
+
