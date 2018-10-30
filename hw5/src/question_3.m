@@ -32,19 +32,19 @@ end
 %}
 
 
-G = [0.1, 0.4780, 1, 2];
-C = [0.1, 1, 10, 20, 40, 80, 160];
+G = [0.3, 0.4780, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2];
+C = [0.1, 1, 5, 10, 20, 25, 30, 40, 80];
 for j = 1:length(G)
     [trainK] = cmpExpX2Kernel(trD, G(j));
     for i = 1:length(C)
-        options = sprintf('-c %d -g %d -t 4 -v 5 -q', C(i), G(j));
+        options = sprintf('-c %d -g %d -t 4 -v 10 -q', C(i), G(j));
         cv_accuracy = svmtrain(trLbs, trainK, options);
         fprintf('options = %s, accuracy = %s\n', options, cv_accuracy);
     end
 end
 
 
-gamma = gamma_start2(trD); % gamma = 0.4780
+%gamma = gamma_start2(trD); % gamma = 0.4780
 
 
 
