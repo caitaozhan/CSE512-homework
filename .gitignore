@@ -17,3 +17,5 @@ hw5/bigbangtheory_v2/
 hw5/sample_submission.csv
 hw5/src/*.mexmaci64
 hw5/src/*.csv
+hw6/data/
+hw6/*.csv
