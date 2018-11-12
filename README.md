@@ -10,3 +10,6 @@ Machine Learning
 [homework 4](https://github.com/caitaozhan/CSE512-homework/blob/master/hw4/hw4.pdf): support vector machine.
 
 [homework 5](https://github.com/caitaozhan/CSE512-homework/blob/master/hw5/hw5.pdf): adaboosting, k-means, libSVM.
+
+[homework 6](https://github.com/caitaozhan/CSE512-homework/tree/master/hw6): PCA, ConvNet
+
