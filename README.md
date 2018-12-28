@@ -14,3 +14,15 @@ Machine Learning
 [homework 6](https://github.com/caitaozhan/CSE512-homework/tree/master/hw6): PCA, CNN
 
 [homework 7](https://github.com/caitaozhan/CSE512-homework/blob/master/hw7/hw7.pdf): EM, GAN, RNN
+
+|Homework|Mean|Median|Me|Bonus|
+| - | - | - | - | - |
+| 1| 94.3| 100| 95| - |
+| 2| 81.2| 84.6| 93.8|-  |
+| 3| 93.7| 96| 100| - |
+| 4| 77.9| 84.1| 77.8| - |
+| 5| 91.0| 96| 97| - |
+| 6| 87.4| 90.6| 96.8| +10 |
+| 7| 85.3| 88.5| 84.5| - |
+
+hw1 and hw3 worth 5% in final grade, the others worth 10% each. 7 homeworks contribute 60% to final grade.
