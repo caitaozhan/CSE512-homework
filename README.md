@@ -26,3 +26,5 @@ Machine Learning
 | 7| 85.3| 88.5| 84.5| - |
 
 hw1 and hw3 worth 5% in final grade, the others worth 10% each. 7 homeworks contribute 60% to final grade.
+
+My rating on the professor: [1/10/2019](https://www.ratemyprofessors.com/ShowRatings.jsp?tid=2068174)
